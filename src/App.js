@@ -3,6 +3,10 @@ import "./App.css";
 import Web3 from "web3";
 import { useState } from "react";
 import ABI from "./ABI.json";
+import Utils from "./Utils";
+
+// 银行合约地址
+const blankContractAddress = "0xA595A2998d69667FcFC00BEEDB8c7a3fA25a1cA6";
 
 function App() {
   const [web3, setWeb3] = useState(null);
@@ -19,25 +23,32 @@ function App() {
   };
 
   const getMyDeposit = async () => {
+    // 查看链上数据用call
     const deposit = await bankContract.methods.myBalance().call({
       from: address,
     });
     setMyDeposit(deposit + "");
   };
 
+  // 存钱
   const deposit = async () => {
+    // 修改链上数据用send
     await bankContract.methods.deposit(number).send({
       from: address,
     });
   };
 
+  // 取钱
   const withdraw = async () => {
+    // 修改链上数据用send
     await bankContract.methods.withdraw(number).send({
       from: address,
     });
   };
 
+  // 转账
   const transfer = async () => {
+    // 修改链上数据用send
     await bankContract.methods.bankTransfer(to, number).send({
       from: address,
     });
@@ -45,25 +56,34 @@ function App() {
 
   const connectWallet = async () => {
     // 1.获取钱包账户
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    setAddress(accounts[0]);
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      setAddress(accounts[0]);
 
-    // 2. 连接web3
-    const web3 = new Web3(window.web3.currentProvider);
-    setWeb3(web3);
+      // 2. 连接web3
+      const web3 = new Web3(window.web3.currentProvider);
+      setWeb3(web3);
 
-    // 3. 获取智能合约 ABI + address
-    const bankContract = new web3.eth.Contract(
-      ABI,
-      "0x0E0E3a61612B6B506EA6B490dCebf9f3bD0fba07"
-    );
-    setBankContract(bankContract);
+      // 3. 获取智能合约 ABI + address
+      const bankContract = new web3.eth.Contract(ABI, blankContractAddress);
+
+      console.log({
+        contractAddress: bankContract.options.address,
+        methods: Object.keys(bankContract.methods), // 所有可调用方法
+        events: Object.keys(bankContract.events), // 所有事件
+        abi: bankContract.options.jsonInterface, // 完整ABI
+      });
+
+      setBankContract(bankContract);
+    } catch (e) {
+      console.error(`连接钱包发生异常：${Utils.getAnyTypeString(e)}`);
+    }
   };
 
   return (
-    <body className="body" style={{ height: "100vh" }}>
+    <div className="body" style={{ height: "100vh" }}>
       <div className="App bg-img">
         <div className="card">
           <h1 className="h1">REN KE BANK</h1>
@@ -114,7 +134,7 @@ function App() {
           </section>
         </div>
       </div>
-    </body>
+    </div>
   );
 }
 
